@@ -16,8 +16,6 @@ import           Test.Hspec.Core.Compat
 
 import           Test.QuickCheck (Args(..))
 import qualified Test.QuickCheck as QC
-import qualified Test.QuickCheck.State as QC (numSuccessTests, maxSuccessTests)
-import qualified Test.QuickCheck.Property as QCP
 
 import           Test.Hspec.Core.Util
 import           Test.Hspec.Core.QuickCheck.Util
@@ -67,11 +65,8 @@ instance Example (a -> QC.Property) where
   type Arg (a -> QC.Property) = a
   evaluateExample p params hook progressCallback = do
     let args = paramsQuickCheckArgs params
-    r <- QC.quickCheckWithResult args {QC.chatty = False} (QCP.callback qcProgressCallback $ aroundProperty hook p)
+    r <- QC.quickCheckWithResult args {QC.chatty = False} (QC.withProgress (\p -> progressCallback (QC.numpassed p, QC.maxtests p)) $ aroundProperty hook p)
     return $ fromQuickCheckResult args r
-    where
-      qcProgressCallback = QCP.PostTest QCP.NotCounterexample $
-        \st _ -> progressCallback (QC.numSuccessTests st, QC.maxSuccessTests st)
 
 fromQuickCheckResult :: QC.Args -> QC.Result -> Result
 fromQuickCheckResult args r = case parseQuickCheckResult r of
